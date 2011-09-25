@@ -18,11 +18,6 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/un.h>
@@ -48,16 +43,15 @@
 #include "pptp_callmgr.h"
 #include <net/if.h>
 #include <net/ethernet.h>
-#include "if_pppox.h"
+#include <linux/if_pppox.h>
 
 #include <stdio.h>
 #include <stdlib.h>
-
-
+#include <pppd/patchlevel.h>
+#include "pptp.h"
 
 extern char** environ;
 
-char pppd_version[] = PPPD_VERSION;
 extern int new_style_driver;
 
 
@@ -335,8 +329,11 @@ void plugin_init(void)
 
     add_options(Options);
 
-    info("PPTP plugin version %s compiled for pppd-%s, linux-%s",
-	 VERSION, PPPD_VERSION,KERNELVERSION);
+    info("PPTP plugin version %d.%d.%d compiled for pppd-%s",
+	PLUGIN_VERSION_MAJOR,
+	PLUGIN_VERSION_MINOR,
+	PLUGIN_VERSION_PATCH,
+	VERSION);
 
     the_channel = &pptp_channel;
     modem = 0;
