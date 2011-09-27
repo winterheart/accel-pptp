@@ -1,6 +1,6 @@
 /***************************************************************************
- *   Copyright (C) 2006 by Kozlov D.   *
- *   xeb@mail.ru   *
+ *   Copyright (C) 2006 by Kozlov D.                                       *
+ *   xeb@mail.ru                                                           *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -30,31 +30,30 @@
 #include <signal.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <sys/wait.h>
 #include <sys/ioctl.h>
+#include <sys/wait.h>
 
-#include "pppd/pppd.h"
-#include "pppd/fsm.h"
-#include "pppd/lcp.h"
-#include "pppd/ipcp.h"
-#include "pppd/ccp.h"
-#include "pppd/pathnames.h"
+#include <pppd/pppd.h>
+#include <pppd/fsm.h>
+#include <pppd/ccp.h>
+#include <pppd/ipcp.h>
+#include <pppd/lcp.h>
+#include <pppd/patchlevel.h>
+#include <pppd/pathnames.h>
 
+#include "pptp.h"
 #include "pptp_callmgr.h"
+
 #include <net/if.h>
 #include <net/ethernet.h>
 #include <linux/if_pppox.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <pppd/patchlevel.h>
-#include "pptp.h"
 
 extern char** environ;
 
 extern int new_style_driver;
 
-
+char pppd_version[] = VERSION;
 char *pptp_server = NULL;
 char *pptp_client = NULL;
 char *pptp_phone = NULL;
