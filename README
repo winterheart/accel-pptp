@@ -41,9 +41,10 @@ Create build directory:
 mkdir accel-pptp_build
 cd accel-pptp_build
 
-Now you can compile plugin:
+Now you can compile plugin (PPP_PREFIX_DIR is where PPP prefix dir, usually 
+this is /usr):
 
-cmake ../accel-pptp-<VER>
+cmake ../accel-pptp-<VER> -DPPP_PREFIX_DIR=/usr
 make
 
 Insallation
@@ -86,10 +87,8 @@ too.
 
 Thanks
 ------
+Author of original accel-pptp code Dmitry Kozlov <xeb@mail.ru>
 Thanks to Kirill Yushkov for debug support and donations.
 
+https://github.com/winterheart/accel-pptp/
 
-http://accel-ppp.org/
-mail: xeb@mail.ru, xeb@linux.vsi.ru
-ICQ: 337258064
-Jabber: xeb@city.veganet.ru, xeb@linux.vsi.ru
