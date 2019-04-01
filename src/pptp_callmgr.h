@@ -7,7 +7,8 @@
 
 #define PPTP_SOCKET_PREFIX "/var/run/pptp/"
 
-int callmgr_main(int argc, char**argv, char**envp);
+int callmgr_main(int argc, char **argv, char **envp);
+
 void callmgr_name_unixsock(struct sockaddr_un *where,
-			   struct in_addr inetaddr,
-			   struct in_addr localbind);
+                           struct in_addr inetaddr,
+                           struct in_addr localbind);

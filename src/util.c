@@ -19,15 +19,16 @@
 char *log_string = "anon";
 
 static void open_log(void) __attribute__ ((constructor));
+
 static void close_log(void) __attribute__ ((destructor));
 
-#define MAKE_STRING(label) 				\
-va_list ap;						\
-char buf[256], string[256];				\
-va_start(ap, format);					\
-vsnprintf(buf, sizeof(buf), format, ap);		\
-snprintf(string, sizeof(string), "%s %s[%s:%s:%d]: %s",	\
-	 log_string, label, func, file, line, buf);	\
+#define MAKE_STRING(label)                \
+va_list ap;                        \
+char buf[256], string[256];                \
+va_start(ap, format);                    \
+vsnprintf(buf, sizeof(buf), format, ap);        \
+snprintf(string, sizeof(string), "%s %s[%s:%s:%d]: %s",    \
+     log_string, label, func, file, line, buf);    \
 va_end(ap)
 
 /*** open log *****************************************************************/
@@ -36,14 +37,12 @@ static void open_log(void) {
 }
 
 /*** close log ****************************************************************/
-static void close_log(void)
-{
+static void close_log(void) {
     closelog();
 }
 
 /*** print a message to syslog ************************************************/
-void _log(const char *func, const char *file, int line, const char *format, ...)
-{
+void _log(const char *func, const char *file, int line, const char *format, ...) {
     MAKE_STRING("log");
     open_log();
     syslog(LOG_NOTICE, "%s", string);
@@ -51,8 +50,7 @@ void _log(const char *func, const char *file, int line, const char *format, ...)
 }
 
 /*** print a warning to syslog ************************************************/
-void _warn(const char *func, const char *file, int line, const char *format, ...)
-{
+void _warn(const char *func, const char *file, int line, const char *format, ...) {
     MAKE_STRING("warn");
     open_log();
     fprintf(stderr, "%s\n", string);
@@ -61,8 +59,7 @@ void _warn(const char *func, const char *file, int line, const char *format, ...
 }
 
 /*** print a fatal warning to syslog and exit *********************************/
-void _fatal(const char *func, const char *file, int line, const char *format, ...)
-{
+void _fatal(const char *func, const char *file, int line, const char *format, ...) {
     MAKE_STRING("fatal");
     fprintf(stderr, "%s\n", string);
     syslog(LOG_CRIT, "%s", string);
@@ -70,8 +67,7 @@ void _fatal(const char *func, const char *file, int line, const char *format, ..
 }
 
 /*** connect a file to a file descriptor **************************************/
-int file2fd(const char *path, const char *mode, int fd)
-{
+int file2fd(const char *path, const char *mode, int fd) {
     int ok = 0;
     FILE *file = NULL;
     file = fopen(path, mode);
@@ -91,16 +87,15 @@ int file2fd(const char *path, const char *mode, int fd)
 static int sigpipe[2];
 
 /* create a signal pipe, returns 0 for success, -1 with errno for failure */
-int sigpipe_create()
-{
-  int rc;
-  
-  rc = pipe(sigpipe);
-  if (rc < 0) return rc;
-  
-  fcntl(sigpipe[0], F_SETFD, FD_CLOEXEC);
-  fcntl(sigpipe[1], F_SETFD, FD_CLOEXEC);
-  
+int sigpipe_create() {
+    int rc;
+
+    rc = pipe(sigpipe);
+    if (rc < 0) return rc;
+
+    fcntl(sigpipe[0], F_SETFD, FD_CLOEXEC);
+    fcntl(sigpipe[1], F_SETFD, FD_CLOEXEC);
+
 #ifdef O_NONBLOCK
 #define FLAG_TO_SET O_NONBLOCK
 #else
@@ -110,49 +105,44 @@ int sigpipe_create()
 #define FLAG_TO_SET FNDELAY
 #endif
 #endif
-  
-  rc = fcntl(sigpipe[1], F_GETFL);
-  if (rc != -1)
-    rc = fcntl(sigpipe[1], F_SETFL, rc | FLAG_TO_SET);
-  if (rc < 0) return rc;
-  return 0;
+
+    rc = fcntl(sigpipe[1], F_GETFL);
+    if (rc != -1)
+        rc = fcntl(sigpipe[1], F_SETFL, rc | FLAG_TO_SET);
+    if (rc < 0) return rc;
+    return 0;
 #undef FLAG_TO_SET
 }
 
 /* generic handler for signals, writes signal number to pipe */
-void sigpipe_handler(int signum)
-{
-  write(sigpipe[1], &signum, sizeof(signum));
-  signal(signum, sigpipe_handler);
+void sigpipe_handler(int signum) {
+    write(sigpipe[1], &signum, sizeof(signum));
+    signal(signum, sigpipe_handler);
 }
 
 /* assign a signal number to the pipe */
-void sigpipe_assign(int signum)
-{
-  struct sigaction sa;
+void sigpipe_assign(int signum) {
+    struct sigaction sa;
 
-  memset(&sa, 0, sizeof(sa));
-  sa.sa_handler = sigpipe_handler;
-  sigaction(signum, &sa, NULL);
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = sigpipe_handler;
+    sigaction(signum, &sa, NULL);
 }
 
 /* return the signal pipe read file descriptor for select(2) */
-int sigpipe_fd()
-{
-  return sigpipe[0];
+int sigpipe_fd() {
+    return sigpipe[0];
 }
 
 /* read and return the pending signal from the pipe */
-int sigpipe_read()
-{
-  int signum;
-  read(sigpipe[0], &signum, sizeof(signum));
-  return signum;
+int sigpipe_read() {
+    int signum;
+    read(sigpipe[0], &signum, sizeof(signum));
+    return signum;
 }
 
-void sigpipe_close()
-{
-  close(sigpipe[0]);
-  close(sigpipe[1]);
+void sigpipe_close() {
+    close(sigpipe[0]);
+    close(sigpipe[1]);
 }
 

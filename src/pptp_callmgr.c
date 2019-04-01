@@ -30,15 +30,18 @@ extern struct in_addr localbind; /* from pptp.c */
 extern int call_ID;
 
 int open_inetsock(struct in_addr inetaddr);
+
 int open_unixsock(struct in_addr inetaddr);
+
 void close_inetsock(int fd, struct in_addr inetaddr);
+
 void close_unixsock(int fd, struct in_addr inetaddr);
 
 sigjmp_buf callmgr_env;
 
 void callmgr_sighandler(int sig) {
     /* TODO: according to signal(2), siglongjmp() is unsafe used here */
-    siglongjmp (callmgr_env, 1);
+    siglongjmp(callmgr_env, 1);
 }
 
 void callmgr_do_nothing(int sig) {
@@ -51,22 +54,22 @@ struct local_callinfo {
 };
 
 struct local_conninfo {
-    VECTOR * call_list;
-    fd_set * call_set;
+    VECTOR *call_list;
+    fd_set *call_set;
 };
 
 /* Call callback */
-void call_callback(PPTP_CONN *conn, PPTP_CALL *call, enum call_state state)
-{
+void call_callback(PPTP_CONN *conn, PPTP_CALL *call, enum call_state state) {
     struct local_callinfo *lci;
     struct local_conninfo *conninfo;
     u_int16_t call_id[2];
-    switch(state) {
+    switch (state) {
         case CALL_OPEN_DONE:
             /* okey dokey.  This means that the call_id and peer_call_id are
              * now valid, so lets send them on to our friends who requested
              * this call.  */
-            lci = pptp_call_closure_get(conn, call); assert(lci != NULL);
+            lci = pptp_call_closure_get(conn, call);
+            assert(lci != NULL);
             pptp_call_get_ids(conn, call, &call_id[0], &call_id[1]);
             write(lci->unix_sock, &call_id, sizeof(call_id));
             /* Our duty to the fatherland is now complete. */
@@ -102,34 +105,32 @@ void call_callback(PPTP_CONN *conn, PPTP_CALL *call, enum call_state state)
  *****************************************************************************/
 
 /*** Call Manager *************************************************************/
-int callmgr_main(int argc, char **argv, char **envp)
-{
+int callmgr_main(int argc, char **argv, char **envp) {
     struct in_addr inetaddr;
     int inet_sock, unix_sock;
     fd_set call_set;
-    PPTP_CONN * conn;
-    VECTOR * call_list;
+    PPTP_CONN *conn;
+    VECTOR *call_list;
     int max_fd = 0;
     volatile int first = 1;
     int retval;
     int i;
-    char * volatile phonenr=NULL;
-    int volatile window=10;
+    char *volatile phonenr = NULL;
+    int volatile window = 10;
     //int volatile call_id=0;
     /* Step 0: Check arguments */
     if (argc < 2)
         fatal("Usage: %s ip.add.ress.here [--phone <phone number>]", argv[0]);
     //phonenr = argc == 3 ? argv[2] : NULL;
-    for(i=2; i<argc; i++)
-    {
-    	//log("%s",argv[i]);
-    	if (strcmp(argv[i],"--phone")==0 && i+1<argc) phonenr=argv[++i];
-    	else if (strcmp(argv[i],"--window")==0 && i+1<argc) window=atoi(argv[++i]);
-    	else if (strcmp(argv[i],"--call_id")==0 && i+1<argc) call_ID=atoi(argv[++i]);
+    for (i = 2; i < argc; i++) {
+        //log("%s",argv[i]);
+        if (strcmp(argv[i], "--phone") == 0 && i + 1 < argc) phonenr = argv[++i];
+        else if (strcmp(argv[i], "--window") == 0 && i + 1 < argc) window = atoi(argv[++i]);
+        else if (strcmp(argv[i], "--call_id") == 0 && i + 1 < argc) call_ID = atoi(argv[++i]);
     }
     if (inet_aton(argv[1], &inetaddr) == 0)
         fatal("Invalid IP address: %s", argv[1]);
-     log("IP: %s\n",inet_ntoa(inetaddr));
+    log("IP: %s\n", inet_ntoa(inetaddr));
     /* Step 1: Open sockets. */
     if ((inet_sock = open_inetsock(inetaddr)) < 0)
         fatal("Could not open control connection to %s", argv[1]);
@@ -159,17 +160,21 @@ int callmgr_main(int argc, char **argv, char **envp)
                                             wake up accept */
     /* Step 2: Open control connection and register callback */
     if ((conn = pptp_conn_open(inet_sock, 1, NULL/* callback */)) == NULL) {
-        close(unix_sock); close(inet_sock); fatal("Could not open connection.");
+        close(unix_sock);
+        close(inet_sock);
+        fatal("Could not open connection.");
     }
     FD_ZERO(&call_set);
     call_list = vector_create();
     {
         struct local_conninfo *conninfo = malloc(sizeof(*conninfo));
         if (conninfo == NULL) {
-            close(unix_sock); close(inet_sock); fatal("No memory.");
+            close(unix_sock);
+            close(inet_sock);
+            fatal("No memory.");
         }
         conninfo->call_list = call_list;
-        conninfo->call_set  = &call_set;
+        conninfo->call_set = &call_set;
         pptp_conn_closure_put(conn, conninfo);
     }
     if (sigsetjmp(callmgr_env, 1) != 0) goto shutdown;
@@ -180,31 +185,31 @@ int callmgr_main(int argc, char **argv, char **envp)
         fd_set read_set = call_set, write_set;
         FD_ZERO (&write_set);
         if (pptp_conn_established(conn)) {
-	  FD_SET (unix_sock, &read_set);
-	  if (unix_sock > max_fd) max_fd = unix_sock;
-	}
+            FD_SET (unix_sock, &read_set);
+            if (unix_sock > max_fd) max_fd = unix_sock;
+        }
         pptp_fd_set(conn, &read_set, &write_set, &max_fd);
-        for (; max_fd > 0 ; max_fd--) {
+        for (; max_fd > 0; max_fd--) {
             if (FD_ISSET (max_fd, &read_set) ||
-                    FD_ISSET (max_fd, &write_set))
+                FD_ISSET (max_fd, &write_set))
                 break;
         }
         /* Step 4: Wait on INET or UNIX event */
-        if ((rc = select(max_fd + 1, &read_set, &write_set, NULL, NULL)) <0) {
-	  if (errno == EBADF) break;
-	  /* a signal or somesuch. */
-	  continue;
-	}
+        if ((rc = select(max_fd + 1, &read_set, &write_set, NULL, NULL)) < 0) {
+            if (errno == EBADF) break;
+            /* a signal or somesuch. */
+            continue;
+        }
         /* Step 5a: Handle INET events */
         rc = pptp_dispatch(conn, &read_set, &write_set);
-	if (rc < 0)
-	    break;
+        if (rc < 0)
+            break;
         /* Step 5b: Handle new connection to UNIX socket */
         if (FD_ISSET(unix_sock, &read_set)) {
             /* New call! */
             struct sockaddr_un from;
             int len = sizeof(from);
-            PPTP_CALL * call;
+            PPTP_CALL *call;
             struct local_callinfo *lci;
             int s;
             /* Accept the socket */
@@ -215,12 +220,14 @@ int callmgr_main(int argc, char **argv, char **envp)
             }
             /* Allocate memory for local call information structure. */
             if ((lci = malloc(sizeof(*lci))) == NULL) {
-                warn("Out of memory."); close(s); goto skip_accept;
+                warn("Out of memory.");
+                close(s);
+                goto skip_accept;
             }
             lci->unix_sock = s;
             /* Give the initiator time to write the PIDs while we open
              * the call */
-            call = pptp_call_open(conn, call_ID,call_callback, phonenr,window);
+            call = pptp_call_open(conn, call_ID, call_callback, phonenr, window);
             /* Read and store the associated pids */
             read(s, &lci->pid[0], sizeof(lci->pid[0]));
             read(s, &lci->pid[1], sizeof(lci->pid[1]));
@@ -228,20 +235,21 @@ int callmgr_main(int argc, char **argv, char **envp)
             pptp_call_closure_put(conn, call, (void *) lci);
             /* The rest is done on callback. */
             /* Keep alive; wait for close */
-            retval = vector_insert(call_list, s, call); assert(retval);
+            retval = vector_insert(call_list, s, call);
+            assert(retval);
             if (s > max_fd) max_fd = s;
             FD_SET(s, &call_set);
             first = 0;
         }
-skip_accept: /* Step 5c: Handle socket close */
+        skip_accept: /* Step 5c: Handle socket close */
         for (i = 0; i < max_fd + 1; i++)
             if (FD_ISSET(i, &read_set)) {
                 /* close it */
-                PPTP_CALL * call;
+                PPTP_CALL *call;
                 retval = vector_search(call_list, i, &call);
                 if (retval) {
                     struct local_callinfo *lci =
-                        pptp_call_closure_get(conn, call);
+                            pptp_call_closure_get(conn, call);
                     log("Closing connection (unhandled)");
                     //if(lci->pid[0] > 1) kill(lci->pid[0], SIGTERM);
                     //if(lci->pid[1] > 1) kill(lci->pid[1], SIGTERM);
@@ -254,13 +262,13 @@ skip_accept: /* Step 5c: Handle socket close */
                 close(i);
             }
     } while (vector_size(call_list) > 0 || first);
-shutdown:
+    shutdown:
     {
         int rc;
         fd_set read_set, write_set;
         struct timeval tv;
-	signal(SIGINT, callmgr_do_nothing);
-	signal(SIGTERM, callmgr_do_nothing);
+        signal(SIGINT, callmgr_do_nothing);
+        signal(SIGTERM, callmgr_do_nothing);
         /* warn("Shutdown"); */
         /* kill all open calls */
         for (i = 0; i < vector_size(call_list); i++) {
@@ -275,39 +283,39 @@ shutdown:
         FD_ZERO(&read_set);
         FD_ZERO(&write_set);
         pptp_fd_set(conn, &read_set, &write_set, &max_fd);
-	tv.tv_sec = 0;
-	tv.tv_usec = 0;
-	select(max_fd + 1, &read_set, &write_set, NULL, &tv);
+        tv.tv_sec = 0;
+        tv.tv_usec = 0;
+        select(max_fd + 1, &read_set, &write_set, NULL, &tv);
         rc = pptp_dispatch(conn, &read_set, &write_set);
-	if (rc > 0) {
-	  /* wait for a respond, a timeout because there might not be one */
-	  FD_ZERO(&read_set);
-	  FD_ZERO(&write_set);
-	  pptp_fd_set(conn, &read_set, &write_set, &max_fd);
-	  tv.tv_sec = 2;
-	  tv.tv_usec = 0;
-	  select(max_fd + 1, &read_set, &write_set, NULL, &tv);
-	  rc = pptp_dispatch(conn, &read_set, &write_set);
-	  if (rc > 0) {
-	    if (i > 0) sleep(2);
-	    /* no more open calls.  Close the connection. */
-	    pptp_conn_close(conn, PPTP_STOP_LOCAL_SHUTDOWN);
-	    /* wait for a respond, a timeout because there might not be one */
-	    FD_ZERO(&read_set);
-	    FD_ZERO(&write_set);
-	    pptp_fd_set(conn, &read_set, &write_set, &max_fd);
-	    tv.tv_sec = 2;
-	    tv.tv_usec = 0;
-	    select(max_fd + 1, &read_set, &write_set, NULL, &tv);
-	    pptp_dispatch(conn, &read_set, &write_set);
-	    if (rc > 0) sleep(2);
-	  }
-	}
+        if (rc > 0) {
+            /* wait for a respond, a timeout because there might not be one */
+            FD_ZERO(&read_set);
+            FD_ZERO(&write_set);
+            pptp_fd_set(conn, &read_set, &write_set, &max_fd);
+            tv.tv_sec = 2;
+            tv.tv_usec = 0;
+            select(max_fd + 1, &read_set, &write_set, NULL, &tv);
+            rc = pptp_dispatch(conn, &read_set, &write_set);
+            if (rc > 0) {
+                if (i > 0) sleep(2);
+                /* no more open calls.  Close the connection. */
+                pptp_conn_close(conn, PPTP_STOP_LOCAL_SHUTDOWN);
+                /* wait for a respond, a timeout because there might not be one */
+                FD_ZERO(&read_set);
+                FD_ZERO(&write_set);
+                pptp_fd_set(conn, &read_set, &write_set, &max_fd);
+                tv.tv_sec = 2;
+                tv.tv_usec = 0;
+                select(max_fd + 1, &read_set, &write_set, NULL, &tv);
+                pptp_dispatch(conn, &read_set, &write_set);
+                if (rc > 0) sleep(2);
+            }
+        }
         /* with extreme prejudice */
         pptp_conn_destroy(conn);
         vector_destroy(call_list);
     }
-cleanup:
+    cleanup:
     signal(SIGINT, callmgr_do_nothing);
     signal(SIGTERM, callmgr_do_nothing);
     close_inetsock(inet_sock, inetaddr);
@@ -316,13 +324,12 @@ cleanup:
 }
 
 /*** open_inetsock ************************************************************/
-int open_inetsock(struct in_addr inetaddr)
-{
+int open_inetsock(struct in_addr inetaddr) {
     struct sockaddr_in dest, src;
     int s;
     dest.sin_family = AF_INET;
-    dest.sin_port   = htons(PPTP_PORT);
-    dest.sin_addr   = inetaddr;
+    dest.sin_port = htons(PPTP_PORT);
+    dest.sin_addr = inetaddr;
     if ((s = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         warn("socket: %s", strerror(errno));
         return s;
@@ -330,22 +337,23 @@ int open_inetsock(struct in_addr inetaddr)
     if (localbind.s_addr != INADDR_NONE) {
         bzero(&src, sizeof(src));
         src.sin_family = AF_INET;
-        src.sin_addr   = localbind;
+        src.sin_addr = localbind;
         if (bind(s, (struct sockaddr *) &src, sizeof(src)) != 0) {
             warn("bind: %s", strerror(errno));
-            close(s); return -1;
+            close(s);
+            return -1;
         }
     }
     if (connect(s, (struct sockaddr *) &dest, sizeof(dest)) < 0) {
         warn("connect: %s", strerror(errno));
-        close(s); return -1;
+        close(s);
+        return -1;
     }
     return s;
 }
 
 /*** open_unixsock ************************************************************/
-int open_unixsock(struct in_addr inetaddr)
-{
+int open_unixsock(struct in_addr inetaddr) {
     struct sockaddr_un where;
     struct stat st;
     char *dir;
@@ -354,20 +362,21 @@ int open_unixsock(struct in_addr inetaddr)
         warn("socket: %s", strerror(errno));
         return s;
     }
-    callmgr_name_unixsock( &where, inetaddr, localbind);
-    if (stat(where.sun_path, &st) >= 0)
-    {
+    callmgr_name_unixsock(&where, inetaddr, localbind);
+    if (stat(where.sun_path, &st) >= 0) {
         warn("Call manager for %s is already running.", inet_ntoa(inetaddr));
-        close(s); return -1;
+        close(s);
+        return -1;
     }
-   /* Make sure path is valid. */
+    /* Make sure path is valid. */
     dir = dirnamex(where.sun_path);
     if (!make_valid_path(dir, 0770))
         fatal("Could not make path to %s: %s", where.sun_path, strerror(errno));
     free(dir);
     if (bind(s, (struct sockaddr *) &where, sizeof(where)) < 0) {
         warn("bind: %s", strerror(errno));
-        close(s); return -1;
+        close(s);
+        return -1;
     }
     chmod(where.sun_path, 0777);
     listen(s, 127);
@@ -375,14 +384,12 @@ int open_unixsock(struct in_addr inetaddr)
 }
 
 /*** close_inetsock ***********************************************************/
-void close_inetsock(int fd, struct in_addr inetaddr)
-{
+void close_inetsock(int fd, struct in_addr inetaddr) {
     close(fd);
 }
 
 /*** close_unixsock ***********************************************************/
-void close_unixsock(int fd, struct in_addr inetaddr)
-{
+void close_unixsock(int fd, struct in_addr inetaddr) {
     struct sockaddr_un where;
     close(fd);
     callmgr_name_unixsock(&where, inetaddr, localbind);
@@ -391,13 +398,12 @@ void close_unixsock(int fd, struct in_addr inetaddr)
 
 /*** make a unix socket address ***********************************************/
 void callmgr_name_unixsock(struct sockaddr_un *where,
-			   struct in_addr inetaddr,
-			   struct in_addr localbind)
-{
+                           struct in_addr inetaddr,
+                           struct in_addr localbind) {
     char localaddr[16], remoteaddr[16];
     where->sun_family = AF_UNIX;
-    strncpy(localaddr,  inet_ntoa(localbind), 16);
-    strncpy(remoteaddr, inet_ntoa(inetaddr),  16);
+    strncpy(localaddr, inet_ntoa(localbind), 16);
+    strncpy(remoteaddr, inet_ntoa(inetaddr), 16);
     snprintf(where->sun_path, sizeof(where->sun_path),
-            PPTP_SOCKET_PREFIX "%s:%i", remoteaddr,call_ID);
+             PPTP_SOCKET_PREFIX "%s:%i", remoteaddr, call_ID);
 }

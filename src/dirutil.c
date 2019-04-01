@@ -12,22 +12,23 @@
 #include "dirutil.h"
 
 /* Returned malloc'ed string representing basename */
-char *basenamex(char *pathname)
-{
+char *basenamex(char *pathname) {
     char *dup = strdup(pathname);
     char *ptr = strrchr(stripslash(dup), '/');
     if (ptr == NULL) return dup;
-    ptr = strdup(ptr+1);
+    ptr = strdup(ptr + 1);
     free(dup);
     return ptr;
 }
 
 /* Return malloc'ed string representing directory name (no trailing slash) */
-char *dirnamex(char *pathname)
-{
+char *dirnamex(char *pathname) {
     char *dup = strdup(pathname);
     char *ptr = strrchr(stripslash(dup), '/');
-    if (ptr == NULL) { free(dup); return strdup("."); }
+    if (ptr == NULL) {
+        free(dup);
+        return strdup(".");
+    }
     if (ptr == dup && dup[0] == '/') ptr++;
     *ptr = '\0';
     return dup;
@@ -44,24 +45,35 @@ char *stripslash(char *pathname) {
 }
 
 /* ensure dirname exists, creating it if necessary. */
-int make_valid_path(char *dir, mode_t mode)
-{
+int make_valid_path(char *dir, mode_t mode) {
     struct stat st;
     char *tmp = NULL, *path = stripslash(strdup(dir));
     int retval;
     if (stat(path, &st) == 0) { /* file exists */
-        if (S_ISDIR(st.st_mode)) { retval = 1; goto end; }
-        else { retval = 0; goto end; } /* not a directory.  Oops. */
+        if (S_ISDIR(st.st_mode)) {
+            retval = 1;
+            goto end;
+        }
+        else {
+            retval = 0;
+            goto end;
+        } /* not a directory.  Oops. */
     }
     /* Directory doesn't exist.  Let's make it. */
     /*   Make parent first. */
-    if (!make_valid_path(tmp = dirnamex(path), mode)) { retval = 0; goto end; }
+    if (!make_valid_path(tmp = dirnamex(path), mode)) {
+        retval = 0;
+        goto end;
+    }
     /*   Now make this 'un. */
-    if (mkdir(path, mode) < 0) { retval = 0; goto end; }
+    if (mkdir(path, mode) < 0) {
+        retval = 0;
+        goto end;
+    }
     /* Success. */
     retval = 1;
 
-end:
+    end:
     if (tmp != NULL) free(tmp);
     if (path != NULL) free(path);
     return retval;

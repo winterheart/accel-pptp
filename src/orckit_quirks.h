@@ -13,15 +13,15 @@
 
 /* return 0 on success, non zero otherwise */
 int
-orckit_atur3_build_hook(struct pptp_out_call_rqst* packt);
+orckit_atur3_build_hook(struct pptp_out_call_rqst *packt);
 
 /* return 0 on success, non zero otherwise */
 int
-orckit_atur3_set_link_hook(struct pptp_set_link_info* packet,
-			   int peer_call_id);
+orckit_atur3_set_link_hook(struct pptp_set_link_info *packet,
+                           int peer_call_id);
 
 /* return 0 on success, non zero otherwise */
 int
-orckit_atur3_start_ctrl_conn_hook(struct pptp_start_ctrl_conn* packet);
+orckit_atur3_start_ctrl_conn_hook(struct pptp_start_ctrl_conn *packet);
 
 #endif /* INC_ORCKIT_QUIRKS_H_ */
