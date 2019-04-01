@@ -39,7 +39,7 @@ add_library(pptp SHARED ${srcFileList})
 set_target_properties(pptp PROPERTIES PREFIX "")
 
 install(TARGETS pptp LIBRARY DESTINATION ${PPP_PLUGIN_PATH})
-install(FILES pppd-pptp.8 DESTINATION share/man/man8)
+install(FILES accel-pptp.8 DESTINATION share/man/man8)
 
 # Packaging stuff
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Accel-PPTP client plugin for PPPd")
