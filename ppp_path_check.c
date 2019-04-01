@@ -18,6 +18,11 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+#define PLUGIN 1
+#ifndef DESTDIR
+#define DESTDIR "/usr"
+#endif
+
 #include <pppd/pathnames.h>
 #include <pppd/patchlevel.h>
 #include <stdio.h>
