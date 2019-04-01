@@ -1,56 +1,55 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-PROJECT(accel-pptp)
+cmake_minimum_required(VERSION 3.1)
+project(accel-pptp VERSION 0.8.7.1)
 
-SET(PLUGIN_VERSION_MAJOR 0)
-SET(PLUGIN_VERSION_MINOR 8)
-SET(PLUGIN_VERSION_PATCH 7)
+set(PPP_PREFIX_DIR "/usr" CACHE STRING "Prefix dir for installed PPP")
 
-SET(PPP_PREFIX_DIR "/usr" CACHE STRING "Prefix dir for installed PPP")
+include(CheckIncludeFiles)
+check_include_files("pppd/pathnames.h;pppd/patchlevel.h" HAVE_PPP_HEADERS)
+if(NOT HAVE_PPP_HEADERS)
+	message(FATAL_ERROR "PPPD not found. Please install pppd-devel package.")
+endif()
 
-TRY_RUN(RUN_RESULT COMPILE_RESULT
+try_run(RUN_RESULT COMPILE_RESULT
 	${PROJECT_BINARY_DIR}/CMakeTmp
 	${PROJECT_SOURCE_DIR}/ppp_path_check.c
 	COMPILE_DEFINITIONS "-DDESTDIR=\"${PPP_PREFIX_DIR}\""
 	RUN_OUTPUT_VARIABLE PPP_PLUGIN_PATH
 )
 
-MESSAGE(STATUS "PPP_PLUGIN_PATH is " ${PPP_PLUGIN_PATH})
+message(STATUS "PPP_PLUGIN_PATH is " ${PPP_PLUGIN_PATH})
 
-SET(srcDir src)
-
-SET(srcFileList
-	${srcDir}/dirutil.c
-	${srcDir}/orckit_quirks.c
-	${srcDir}/pptp.c
-	${srcDir}/pptp_callmgr.c
-	${srcDir}/pptp_ctrl.c
-	${srcDir}/pptp_quirks.c
-	${srcDir}/util.c
-	${srcDir}/vector.c
+set(srcFileList
+	src/dirutil.c
+	src/orckit_quirks.c
+	src/pptp.c
+	src/pptp_callmgr.c
+	src/pptp_ctrl.c
+	src/pptp_quirks.c
+	src/util.c
+	src/vector.c
 )
 
-CONFIGURE_FILE(
-	"${PROJECT_SOURCE_DIR}/${srcDir}/pptp.h.in"
-	"${PROJECT_BINARY_DIR}/${srcDir}/pptp.h"
+configure_file(
+	"${PROJECT_SOURCE_DIR}/src/pptp.h.in"
+	"${PROJECT_BINARY_DIR}/pptp.h"
 )
-INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}/${srcDir}")
+include_directories("${PROJECT_BINARY_DIR}")
 
-ADD_LIBRARY(pptp SHARED ${srcFileList})
-SET_TARGET_PROPERTIES(pptp PROPERTIES PREFIX "")
+add_library(pptp SHARED ${srcFileList})
+set_target_properties(pptp PROPERTIES PREFIX "")
 
-INSTALL(TARGETS pptp LIBRARY DESTINATION ${PPP_PLUGIN_PATH})
-INSTALL(FILES pppd-pptp.8 DESTINATION share/man/man8)
+install(TARGETS pptp LIBRARY DESTINATION ${PPP_PLUGIN_PATH})
+install(FILES pppd-pptp.8 DESTINATION share/man/man8)
 
 # Packaging stuff
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Accel-PPTP client plugin for PPPd")
-SET(CPACK_PACKAGE_VENDOR "Dmitry Kozlov <xeb@mail.ru>")
-SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README")
-SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING")
-SET(CPACK_PACKAGE_VERSION_MAJOR ${PLUGIN_VERSION_MAJOR})
-SET(CPACK_PACKAGE_VERSION_MINOR ${PLUGIN_VERSION_MINOR})
-SET(CPACK_PACKAGE_VERSION_PATCH ${PLUGIN_VERSION_PATCH})
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Accel-PPTP client plugin for PPPd")
+set(CPACK_PACKAGE_VENDOR "Azamat H. Hackimov <azamat.hackimov@gmail.com")
+set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME
-	"${CMAKE_PROJECT_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-SET(CPACK_SOURCE_GENERATOR TBZ2)
+	"${CMAKE_PROJECT_NAME}-${PROJECT_VERSION}")
+set(CPACK_SOURCE_GENERATOR TBZ2)
+set(CPACK_SOURCE_IGNORE_FILES
+  "/build;/.git*;.idea;/cmake-build-*")
 
-INCLUDE(CPack)
+include(CPack)
