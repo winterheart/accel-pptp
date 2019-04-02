@@ -38,7 +38,7 @@ char *dirnamex(char *pathname) {
  * stripslash("/") returns "/";
  */
 char *stripslash(char *pathname) {
-    int len = strlen(pathname);
+    size_t len = strlen(pathname);
     while (len > 1 && pathname[len - 1] == '/')
         pathname[--len] = '\0';
     return pathname;

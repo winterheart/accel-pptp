@@ -80,7 +80,7 @@ int vector_insert(VECTOR *v, int key, PPTP_CALL *call) {
 #ifdef VECTOR_DEBUG
     assert(v->key_max < key);
 #endif
-    if (!(v->size < v->alloc)) {
+    if (v->size >= v->alloc) {
         void *tmp = realloc(v->item, sizeof(*(v->item)) * 2 * v->alloc);
         if (tmp != NULL) {
             v->alloc *= 2;
